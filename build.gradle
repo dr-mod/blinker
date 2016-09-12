@@ -1,0 +1,39 @@
+plugins {
+    id 'org.hidetake.ssh' version '2.6.0'
+    id 'java'
+}
+
+remotes {
+    raspberry {
+        host = '192.168.100.169'
+        user = 'pi'
+        identity = file('id_rsa')
+    }
+}
+
+jar {
+    manifest {
+        attributes "Main-Class": "Main", "Class-Path" : "/opt/pi4j/lib/pi4j-core.jar"
+    }
+
+//    from {
+//        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+//    }
+}
+
+task dist(dependsOn: [build]) << {
+    ssh.run {
+        session(remotes.raspberry) {
+            put from: 'build/libs/rpi.jar', into: '/home/pi/'
+            executeSudo 'java -jar /home/pi/rpi.jar', pty: true
+        }
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'com.pi4j:pi4j-core:1.1'
+}
